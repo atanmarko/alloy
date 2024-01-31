@@ -13,7 +13,10 @@ pub use self::{
     noop::NoopFrame,
     pre_state::{
         AccountChangeKind, AccountState, DiffMode, DiffStateKind, PreStateConfig, PreStateFrame,
-        PreStateMode,
+        PreStateMode
+    },
+    zero_tracer::{
+        ZeroTracerConfig, ZeroTracerFrame
     },
 };
 
@@ -21,6 +24,8 @@ pub mod call;
 pub mod four_byte;
 pub mod noop;
 pub mod pre_state;
+
+pub mod zero_tracer;
 
 /// Result type for geth style transaction trace
 pub type TraceResult = crate::common::TraceResult<GethTrace, String>;
@@ -176,6 +181,9 @@ pub enum GethDebugBuiltInTracerType {
     /// accounts.
     #[serde(rename = "prestateTracer")]
     PreStateTracer,
+    /// Zero tracer
+    #[serde(rename = "zeroTracer")]
+    ZeroTracer,
     /// This tracer is noop. It returns an empty object and is only meant for testing the setup.
     #[serde(rename = "noopTracer")]
     NoopTracer,
@@ -235,6 +243,14 @@ impl GethDebugTracerConfig {
 
     /// Returns the [PreStateConfig] if it is a call config.
     pub fn into_pre_state_config(self) -> Result<PreStateConfig, serde_json::Error> {
+        if self.0.is_null() {
+            return Ok(Default::default());
+        }
+        self.from_value()
+    }
+
+    /// Returns the [ZeroTracerConfig] if it is a call config.
+    pub fn into_zero_tracer_config(self) -> Result<ZeroTracerConfig, serde_json::Error> {
         if self.0.is_null() {
             return Ok(Default::default());
         }
