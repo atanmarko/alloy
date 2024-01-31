@@ -3,58 +3,23 @@ use alloy_rpc_types::serde_helpers::num::from_int_or_hex_opt;
 use serde::{Deserialize, Serialize};
 use std::collections::{btree_map, BTreeMap};
 
-/// A tracer that records [ZeroTrace]s.
-///
-/// <https://github.com/ethereum/go-ethereum/blob/91cb6f863a965481e51d5d9c0e5ccd54796fd967/eth/tracers/native/prestate.go#L38>
-#[derive(Debug, PartialEq, Eq, Clone, Deserialize, Serialize)]
-#[serde(untagged)]
-pub enum ZeroTracerFrame {
-    /// The default mode returns the accounts necessary to execute a given transaction.
-    ///
-    /// It re-executes the given transaction and tracks every part of state that is touched.
-    Default(ZeroTracerMode),
-    /// Diff mode returns the differences between the transaction's pre and post-state (i.e. what
-    /// changed because the transaction happened).
-    Diff(DiffMode),
+#[derive(Debug, Clone, Default, PartialEq, Eq, Serialize, Deserialize)]
+pub struct ZeroTraceData {
+    pub storage_read: Vec<String>,
+    pub storage_written: Vec<BTreeMap<String, String>>,
+    code: Vec<BTreeMap<String, String>>,
 }
 
-impl ZeroTracerFrame {
-    /// Returns true if this trace was requested without diffmode.
-    pub const fn is_default(&self) -> bool {
-        matches!(self, ZeroTracerFrame::Default(_))
-    }
-
-    /// Returns true if this trace was requested with diffmode.
-    pub const fn is_diff(&self) -> bool {
-        matches!(self, ZeroTracerFrame::Diff(_))
-    }
-
-    /// Returns the account states after the transaction is executed if this trace was requested
-    /// without diffmode.
-    pub const fn as_default(&self) -> Option<&ZeroTracerMode> {
-        match self {
-            ZeroTracerFrame::Default(mode) => Some(mode),
-            _ => None,
-        }
-    }
-
-    /// Returns the account states before and after the transaction is executed if this trace was
-    /// requested with diffmode.
-    pub const fn as_diff(&self) -> Option<&DiffMode> {
-        match self {
-            ZeroTracerFrame::Diff(mode) => Some(mode),
-            _ => None,
-        }
-    }
-}
-
-/// Includes all the account states necessary to execute a given transaction.
+/// Zero trace
 ///
 /// This corresponds to the default mode of the [ZeroTracerConfig].
 ///
 /// The [AccountState]'s storage will include all non-zero slots that are modified by a transaction.
 #[derive(Debug, Clone, Default, PartialEq, Eq, Serialize, Deserialize)]
-pub struct ZeroTracerMode(pub BTreeMap<Address, AccountState>);
+pub struct ZeroFrame {
+    pub traces: BTreeMap<Address, ZeroTraceData>,
+    pub meta: Vec<BTreeMap<String, String>>,
+}
 
 /// Represents the account states before and after the transaction is executed.
 ///
@@ -249,25 +214,12 @@ mod tests {
     }
 
     #[test]
-    fn test_deserialize_pre_state_trace() {
-        let trace: ZeroTracerFrame = serde_json::from_str(DEFAULT).unwrap();
+    fn test_deserialize_zero_trace() {
+        let trace: ZeroFrame = serde_json::from_str(DEFAULT).unwrap();
         match trace {
-            ZeroTracerFrame::Default(ZeroTracerMode(_)) => {}
+            ZeroFrame(_) => {}
             _ => unreachable!(),
         }
-        let _trace: ZeroTracerFrame = serde_json::from_str(LEGACY).unwrap();
-        let trace: ZeroTracerFrame = serde_json::from_str(DIFF_MODE).unwrap();
-        match trace {
-            ZeroTracerFrame::Diff(DiffMode { pre: _pre, post: _post }) => {}
-            _ => unreachable!(),
-        }
-    }
-
-    #[test]
-    fn test_is_diff_mode() {
-        assert!(ZeroTracerConfig { diff_mode: Some(true) }.is_diff_mode());
-        assert!(!ZeroTracerConfig { diff_mode: Some(false) }.is_diff_mode());
-        assert!(!ZeroTracerConfig { diff_mode: None }.is_diff_mode());
     }
 
     #[test]
@@ -296,7 +248,7 @@ mod tests {
   }
 }
 "#;
-        let pre_state: ZeroTracerFrame = serde_json::from_str(s).unwrap();
+        let pre_state: ZeroFrame = serde_json::from_str(s).unwrap();
         assert!(pre_state.is_default());
     }
     #[test]
@@ -315,7 +267,7 @@ mod tests {
   }
 }
 "#;
-        let pre_state: ZeroTracerFrame = serde_json::from_str(s).unwrap();
+        let pre_state: ZeroFrame = serde_json::from_str(s).unwrap();
         assert!(pre_state.is_diff());
     }
 

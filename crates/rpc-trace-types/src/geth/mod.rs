@@ -13,11 +13,9 @@ pub use self::{
     noop::NoopFrame,
     pre_state::{
         AccountChangeKind, AccountState, DiffMode, DiffStateKind, PreStateConfig, PreStateFrame,
-        PreStateMode
+        PreStateMode,
     },
-    zero_tracer::{
-        ZeroTracerConfig, ZeroTracerFrame
-    },
+    zero_tracer::{ZeroFrame, ZeroTracerConfig},
 };
 
 pub mod call;
@@ -119,6 +117,8 @@ pub enum GethTrace {
     FourByteTracer(FourByteFrame),
     /// The response for pre-state byte tracer
     PreStateTracer(PreStateFrame),
+    // The response for zero tracer
+    ZeroTracer(ZeroFrame),
     /// An empty json response
     NoopTracer(NoopFrame),
     /// Any other trace response, such as custom javascript response objects
@@ -146,6 +146,12 @@ impl From<CallFrame> for GethTrace {
 impl From<PreStateFrame> for GethTrace {
     fn from(value: PreStateFrame) -> Self {
         GethTrace::PreStateTracer(value)
+    }
+}
+
+impl From<ZeroFrame> for GethTrace {
+    fn from(value: ZeroFrame) -> Self {
+        GethTrace::ZeroTracer(value)
     }
 }
 
