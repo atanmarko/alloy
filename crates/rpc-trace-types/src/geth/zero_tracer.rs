@@ -3,11 +3,24 @@ use alloy_rpc_types::serde_helpers::num::from_int_or_hex_opt;
 use serde::{Deserialize, Serialize};
 use std::collections::{btree_map, BTreeMap};
 
+#[derive(Debug, Clone, Default, PartialEq, Eq, Copy, Serialize, Deserialize)]
+pub struct ZeroTraceDataAccount {
+    pub balance: U256,
+    pub nonce: U256,
+}
+
 #[derive(Debug, Clone, Default, PartialEq, Eq, Serialize, Deserialize)]
-pub struct ZeroTraceData {
+pub struct ZeroTraceDataContract {
     pub storage_read: Vec<String>,
-    pub storage_written: Vec<BTreeMap<String, String>>,
-    code: Vec<BTreeMap<String, String>>,
+    pub storage_written: BTreeMap<String, String>,
+    pub code_usage: BTreeMap<String, String>,
+}
+
+#[derive(Debug, Clone, PartialEq, Eq, Serialize, Deserialize)]
+#[serde(untagged)]
+pub enum ZeroTraceData {
+    Account(ZeroTraceDataAccount),
+    Contract(ZeroTraceDataContract),
 }
 
 /// Zero trace
